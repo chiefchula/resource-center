@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Centers Map{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-geo-alt"></i> Resource Centers Map</h2>
+    <a href="{{ url_for('admin.centers') }}" class="btn btn-outline-secondary">
+        Back to list
+    </a>
+</div>
+
+{% set unmapped = centers | rejectattr('has_coords') | list %}
+{% if unmapped %}
+<div class="alert alert-warning">
+    <strong>{{ unmapped|length }} center(s) without coordinates:</strong>
+    {% for c in unmapped %}
+        <a href="{{ url_for('admin.edit_center', center_id=c.id) }}"
+           class="badge bg-warning text-dark text-decoration-none">
+            {{ c.name }} <i class="bi bi-pencil"></i>
+        </a>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div id="map" style="height: 600px; border-radius: 8px;" class="border"></div>
+{% endblock %}
+
+{% block scripts %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // Centers passed from server
+    const centers = {{ centers | tojson }};
+
+    const DEFAULT = { lat: -0.0236, lng: 37.9062, zoom: 6 };
+    const map = L.map('map').setView([DEFAULT.lat, DEFAULT.lng], DEFAULT.zoom);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    const greenIcon = new L.Icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+        iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+    });
+
+    const bounds = [];
+
+    centers.forEach(c => {
+        if (!c.has_coords || c.lat == null || c.lng == null) return;
+
+        const m = L.marker([c.lat, c.lng], { icon: greenIcon }).addTo(map);
+        m.bindPopup(`
+            <strong>${c.name}</strong><br>
+            ${c.subcounty ? 'Subcounty: ' + c.subcounty + '<br>' : ''}
+            ${c.ward ? 'Ward: ' + c.ward + '<br>' : ''}
+            ${c.location ? 'Location: ' + c.location + '<br>' : ''}
+            ${c.contact ? 'Contact: ' + c.contact + '<br>' : ''}
+            ${c.phone ? 'Phone: ' + c.phone + '<br>' : ''}
+            <a href="/admin/centers/${c.id}/edit">Edit</a>
+        `);
+        bounds.push([c.lat, c.lng]);
+    });
+
+    if (bounds.length) {
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+    }
+</script>
+{% endblock %}

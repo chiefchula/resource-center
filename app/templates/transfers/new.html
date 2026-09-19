@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}New Transfer{% endblock %}
+{% block content %}
+<h2 class="mb-4">Transfer: {{ item.name }}</h2>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <p class="mb-1"><strong>Current Center:</strong> {{ item.current_center.name }}</p>
+        <p class="mb-0"><strong>Category:</strong> {{ item.category.name }} | <strong>Qty:</strong> {{ item.quantity }}</p>
+    </div>
+</div>
+
+<form method="POST" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="mb-3">
+        {{ form.to_center_id.label(class="form-label") }}
+        {{ form.to_center_id(class="form-select") }}
+    </div>
+    <div class="mb-3">
+        {{ form.notes.label(class="form-label") }}
+        {{ form.notes(class="form-control", rows=3) }}
+    </div>
+    {{ form.submit(class="btn btn-primary") }}
+    <a class="btn btn-outline-secondary" href="{{ url_for('items.view_item', item_id=item.id) }}">Cancel</a>
+</form>
+{% endblock %}

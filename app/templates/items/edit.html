@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Edit {{ item.name }}{% endblock %}
+{% block content %}
+<h2 class="mb-4">Edit Item: {{ item.name }}</h2>
+<form method="POST" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="row g-3">
+        <div class="col-md-6">{{ form.name.label(class="form-label") }}{{ form.name(class="form-control") }}</div>
+        <div class="col-md-6">{{ form.category_id.label(class="form-label") }}{{ form.category_id(class="form-select") }}</div>
+        <div class="col-md-12">{{ form.description.label(class="form-label") }}{{ form.description(class="form-control", rows=3) }}</div>
+        <div class="col-md-4">{{ form.serial_number.label(class="form-label") }}{{ form.serial_number(class="form-control") }}</div>
+        <div class="col-md-4">{{ form.quantity.label(class="form-label") }}{{ form.quantity(class="form-control") }}</div>
+        <div class="col-md-4">{{ form.condition.label(class="form-label") }}{{ form.condition(class="form-select") }}</div>
+        <div class="col-md-4">{{ form.acquisition_type.label(class="form-label") }}{{ form.acquisition_type(class="form-select", id="acq-type") }}</div>
+        <div class="col-md-8 donation-field">{{ form.organization_id.label(class="form-label") }}{{ form.organization_id(class="form-select") }}</div>
+        <div class="col-md-4 purchase-field">{{ form.purchase_price.label(class="form-label") }}{{ form.purchase_price(class="form-control") }}</div>
+        <div class="col-md-4 purchase-field">{{ form.purchase_date.label(class="form-label") }}{{ form.purchase_date(class="form-control") }}</div>
+    </div>
+    <div class="mt-4">
+        {{ form.submit(class="btn btn-primary") }}
+        <a class="btn btn-outline-secondary" href="{{ url_for('items.view_item', item_id=item.id) }}">Cancel</a>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+doc{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const acq        = document.getElementById('acq-type');
+    const orgField   = document.getElementById('org-id');
+    const donation   = document.querySelectorAll('.donation-field');
+    const purchase   = document.querySelectorAll('.purchase-field');
+
+    function toggle() {
+        const isDonation = acq.value === 'donated';
+        donation.forEach(el => el.style.display = isDonation ? '' : 'none');
+        purchase.forEach(el => el.style.display = isDonation ? 'none' : '');
+
+        // Mark the org field required only when Donated is selected
+        if (orgField) {
+            if (isDonation) {
+                orgField.setAttribute('required', 'required');
+            } else {
+                orgField.removeAttribute('required');
+            }
+        }
+    }
+
+    acq.addEventListener('change', toggle);
+    toggle();
+});
+</script>
+{% endblock %}

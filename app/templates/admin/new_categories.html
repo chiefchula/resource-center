@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}New Center{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">New Resource Center</h2>
+
+<form method="POST" novalidate>
+    {{ form.hidden_tag() }}
+
+    <div class="row g-3">
+        <div class="col-md-6">
+            {{ form.name.label(class="form-label") }}
+            {{ form.name(class="form-control") }}
+        </div>
+        <div class="col-md-6">
+            {{ form.location.label(class="form-label") }}
+            {{ form.location(class="form-control") }}
+        </div>
+
+        <div class="col-md-6">
+            {{ form.subcounty.label(class="form-label") }}
+            {{ form.subcounty(class="form-control") }}
+        </div>
+        <div class="col-md-6">
+            {{ form.ward.label(class="form-label") }}
+            {{ form.ward(class="form-control") }}
+        </div>
+
+        <div class="col-md-6">
+            {{ form.contact_person.label(class="form-label") }}
+            {{ form.contact_person(class="form-control") }}
+        </div>
+        <div class="col-md-6">
+            {{ form.contact_email.label(class="form-label") }}
+            {{ form.contact_email(class="form-control") }}
+        </div>
+        <div class="col-md-6">
+            {{ form.contact_phone.label(class="form-label") }}
+            {{ form.contact_phone(class="form-control") }}
+        </div>
+    </div>
+
+    <hr class="my-4">
+    <h5>Geolocation <small class="text-muted">(optional — you can add it later)</small></h5>
+
+    <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+            {{ form.latitude.label(class="form-label") }}
+            {{ form.latitude(class="form-control", id="lat", step="any") }}
+        </div>
+        <div class="col-md-3">
+            {{ form.longitude.label(class="form-label") }}
+            {{ form.longitude(class="form-control", id="lng", step="any") }}
+        </div>
+        <div class="col-md-6">
+            <button type="button" class="btn btn-outline-primary"
+                    onclick="useMyLocation()">
+                <i class="bi bi-crosshair"></i> Use My Location
+            </button>
+            <button type="button" class="btn btn-outline-secondary"
+                    onclick="clearCoords()">
+                Clear
+            </button>
+        </div>
+    </div>
+
+    <p class="text-muted small mt-2">
+        Tip: click anywhere on the map to fill the coordinates automatically.
+    </p>
+
+    <div id="picker-map" style="height: 350px; border-radius: 8px;"
+         class="mb-3 border"></div>
+
+    <div class="mt-3">
+        {{ form.submit(class="btn btn-primary") }}
+        <a class="btn btn-outline-secondary" href="{{ url_for('admin.centers') }}">Cancel</a>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    const latInput = document.getElementById('lat');
+    const lngInput = document.getElementById('lng');
+
+    // Default center (Kenya). Change as you like.
+    const DEFAULT = { lat: -0.0236, lng: 37.9062, zoom: 6 };
+
+    const map = L.map('picker-map').setView([DEFAULT.lat, DEFAULT.lng], DEFAULT.zoom);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    let marker = null;
+
+    function setMarker(lat, lng) {
+        lat = parseFloat(lat);
+        lng = parseFloat(lng);
+        if (isNaN(lat) || isNaN(lng)) return;
+
+        if (marker) {
+            marker.setLatLng([lat, lng]);
+        } else {
+            marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+            marker.on('dragend', e => {
+                const p = e.target.getLatLng();
+                latInput.value = p.lat.toFixed(6);
+                lngInput.value = p.lng.toFixed(6);
+            });
+        }
+        latInput.value = lat.toFixed(6);
+        lngInput.value = lng.toFixed(6);
+        map.setView([lat, lng], Math.max(map.getZoom(), 12));
+    }
+
+    // Click on map to place marker
+    map.on('click', e => setMarker(e.latlng.lat, e.latlng.lng));
+
+    // Sync inputs → marker
+    [latInput, lngInput].forEach(el => el.addEventListener('change', () => {
+        if (latInput.value && lngInput.value) {
+            setMarker(latInput.value, lngInput.value);
+        }
+    }));
+
+    // Browser geolocation
+    window.useMyLocation = function () {
+        if (!navigator.geolocation) {
+            alert('Geolocation not supported by your browser.');
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            pos => setMarker(pos.coords.latitude, pos.coords.longitude),
+            err => alert('Could not get location: ' + err.message)
+        );
+    };
+
+    window.clearCoords = function () {
+        latInput.value = '';
+        lngInput.value = '';
+        if (marker) { map.removeLayer(marker); marker = null; }
+    };
+
+    // Pre-fill if existing values (useful for edit page reuse)
+    if (latInput.value && lngInput.value) {
+        setMarker(latInput.value, lngInput.value);
+    }
+</script>
+{% endblock %}

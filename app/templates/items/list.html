@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Items{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Items</h2>
+    <a href="{{ url_for('items.new_item') }}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Register Item</a>
+</div>
+
+<form class="row g-2 mb-3" method="get">
+    <div class="col-md-4">
+        <input type="text" class="form-control" name="q" value="{{ search }}" placeholder="Search by name…">
+    </div>
+    <div class="col-md-3">
+        <select class="form-select" name="category">
+            <option value="">All categories</option>
+            {% for c in categories %}
+            <option value="{{ c.id }}" {% if current_category == c.id %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select class="form-select" name="status">
+            <option value="">All statuses</option>
+            <option value="active" {% if current_status == 'active' %}selected{% endif %}>Active</option>
+            <option value="decommissioned" {% if current_status == 'decommissioned' %}selected{% endif %}>Decommissioned</option>
+            <option value="pending_transfer" {% if current_status == 'pending_transfer' %}selected{% endif %}>Pending Transfer</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <button class="btn btn-outline-secondary w-100" type="submit">Filter</button>
+    </div>
+</form>
+
+<div class="card">
+    <div class="card-body p-0">
+        {% if items %}
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Name</th><th>Category</th><th>Qty</th><th>Center</th><th>Status</th><th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td><a href="{{ url_for('items.view_item', item_id=item.id) }}">{{ item.name }}</a></td>
+                    <td>{{ item.category.name }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.current_center.name }}</td>
+                    <td><span class="badge bg-{{ item.status|status_badge }}">{{ item.status.replace('_', ' ') }}</span></td>
+                    <td class="text-end">
+                        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('items.view_item', item_id=item.id) }}">View</a>
+                        {% if item.is_active %}
+                        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('transfers.new_transfer', item_id=item.id) }}">Transfer</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="p-3 text-muted mb-0">No items found.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

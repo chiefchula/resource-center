@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}New User{% endblock %}
+{% block content %}
+<h2 class="mb-4">New User</h2>
+<form method="POST" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="row g-3">
+        <div class="col-md-6">{{ form.username.label(class="form-label") }}{{ form.username(class="form-control") }}</div>
+        <div class="col-md-6">{{ form.email.label(class="form-label") }}{{ form.email(class="form-control") }}</div>
+        <div class="col-md-6">{{ form.password.label(class="form-label") }}{{ form.password(class="form-control") }}</div>
+        <div class="col-md-6">{{ form.resource_center_id.label(class="form-label") }}{{ form.resource_center_id(class="form-select") }}</div>
+        <div class="col-md-12 form-check ms-2">{{ form.is_admin(class="form-check-input") }} {{ form.is_admin.label(class="form-check-label") }}</div>
+    </div>
+    <div class="mt-4">{{ form.submit(class="btn btn-primary") }} <a class="btn btn-outline-secondary" href="{{ url_for('admin.users') }}">Cancel</a></div>
+</form>
+{% endblock %}

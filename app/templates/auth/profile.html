@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">My Profile</h2>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0">Account</h5></div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Username</dt>
+                    <dd class="col-sm-8">{{ user.username }}</dd>
+
+                    <dt class="col-sm-4">Email</dt>
+                    <dd class="col-sm-8">{{ user.email }}</dd>
+
+                    <dt class="col-sm-4">Role</dt>
+                    <dd class="col-sm-8">
+                        {% if user.is_admin %}
+                            <span class="badge bg-warning text-dark">Administrator</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Staff</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-4">Member since</dt>
+                    <dd class="col-sm-8">{{ user.created_at|date }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0">Resource Center</h5></div>
+            <div class="card-body">
+                {% if user.resource_center %}
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Name</dt>
+                        <dd class="col-sm-8">{{ user.resource_center.name }}</dd>
+
+                        <dt class="col-sm-4">Subcounty</dt>
+                        <dd class="col-sm-8">{{ user.resource_center.subcounty or '—' }}</dd>
+
+                        <dt class="col-sm-4">Ward</dt>
+                        <dd class="col-sm-8">{{ user.resource_center.ward or '—' }}</dd>
+
+                        <dt class="col-sm-4">Location</dt>
+                        <dd class="col-sm-8">{{ user.resource_center.location or '—' }}</dd>
+
+                        <dt class="col-sm-4">Contact</dt>
+                        <dd class="col-sm-8">
+                            {{ user.resource_center.contact_person or '—' }}<br>
+                            <small class="text-muted">
+                                {{ user.resource_center.contact_email or '' }}
+                                {% if user.resource_center.contact_phone %}
+                                    · {{ user.resource_center.contact_phone }}
+                                {% endif %}
+                            </small>
+                        </dd>
+                    </dl>
+                {% else %}
+                    <p class="text-muted mb-0">You are not assigned to a resource center.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

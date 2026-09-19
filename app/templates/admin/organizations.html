@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Organizations{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+    <h2 class="mb-0">Organizations</h2>
+    <a href="{{ url_for('admin.new_organization') }}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> New Organization</a>
+</div>
+<div class="card"><div class="card-body p-0">
+    <table class="table mb-0">
+        <thead class="table-light"><tr><th>Name</th><th>Contact</th><th>Email</th></tr></thead>
+        <tbody>
+            {% for o in organizations %}
+            <tr><td>{{ o.name }}</td><td>{{ o.contact_person or '—' }}</td><td>{{ o.contact_email or '—' }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div></div>
+{% endblock %}
