@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 
 from app import db
-from app.models import Item, Category, Organization, ItemStatus, AcquisitionType
+from app.models import Item, Category, Organization, ItemStatus, AcquisitionType, ResourceCenter
 from app.forms import ItemForm, DecommissionForm
 from app.decorators import center_access_required
 
@@ -15,6 +15,36 @@ def _can_access(item):
     return current_user.is_admin or item.current_center_id == current_user.resource_center_id
 
 
+# @items_bp.route('/')
+# @login_required
+# def list_items():
+#     page = request.args.get('page', 1, type=int)
+#     category_id = request.args.get('category', type=int)
+#     status = request.args.get('status')
+#     search = request.args.get('q', '').strip()
+
+#     query = Item.query
+#     if not current_user.is_admin:
+#         query = query.filter_by(current_center_id=current_user.resource_center_id)
+#     if category_id:
+#         query = query.filter_by(category_id=category_id)
+#     if status:
+#         query = query.filter_by(status=status)
+#     if search:
+#         query = query.filter(Item.name.ilike(f'%{search}%'))
+
+#     items = query.order_by(Item.created_at.desc()).all()
+#     categories = Category.query.order_by(Category.name).all()
+
+#     return render_template(
+#         'items/list.html',
+#         items=items,
+#         categories=categories,
+#         current_category=category_id,
+#         current_status=status,
+#         search=search,
+#     )
+
 @items_bp.route('/')
 @login_required
 def list_items():
@@ -22,10 +52,14 @@ def list_items():
     category_id = request.args.get('category', type=int)
     status = request.args.get('status')
     search = request.args.get('q', '').strip()
+    center_id = request.args.get('center', type=int)         # NEW
 
     query = Item.query
     if not current_user.is_admin:
         query = query.filter_by(current_center_id=current_user.resource_center_id)
+    elif center_id:                                          # NEW
+        # Admins can filter by a specific center
+        query = query.filter_by(current_center_id=center_id)
     if category_id:
         query = query.filter_by(category_id=category_id)
     if status:
@@ -36,12 +70,18 @@ def list_items():
     items = query.order_by(Item.created_at.desc()).all()
     categories = Category.query.order_by(Category.name).all()
 
+    # NEW: pass the current center so the template can show a filter chip
+    current_center = None
+    if center_id:
+        current_center = ResourceCenter.query.get(center_id)
+
     return render_template(
         'items/list.html',
         items=items,
         categories=categories,
         current_category=category_id,
         current_status=status,
+        current_center=current_center,
         search=search,
     )
 

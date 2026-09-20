@@ -2,9 +2,11 @@ from flask import Blueprint, render_template, redirect, url_for, flash, jsonify,
 from flask_login import login_required
 
 from app import db
-from app.models import User, ResourceCenter, Category, Organization
+from app.models import User, ResourceCenter, Category, Organization, Item, ItemStatus
 from app.forms import UserForm, ResourceCenterForm, CategoryForm, OrganizationForm
 from app.decorators import admin_required
+
+from sqlalchemy import func
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -113,12 +115,41 @@ def new_organization():
         return redirect(url_for('admin.organizations'))
     return render_template('admin/new_organization.html', form=form)
 
+
 @admin_bp.route('/centers')
 @login_required
 @admin_required
 def centers():
+    # Per-center counts in one query:
+    #   - total items
+    #   - active items
+    rows = (
+        db.session.query(
+            Item.current_center_id.label('center_id'),
+            func.count(Item.id).label('total'),
+            func.sum(
+                db.case(
+                    (Item.status == ItemStatus.ACTIVE.value, 1),
+                    else_=0,
+                )
+            ).label('active'),
+        )
+        .group_by(Item.current_center_id)
+        .all()
+    )
+
+    counts = {
+        r.center_id: {'total': r.total, 'active': int(r.active or 0)}
+        for r in rows
+    }
+
     all_centers = ResourceCenter.query.order_by(ResourceCenter.name).all()
-    return render_template('admin/centers.html', centers=all_centers)
+
+    return render_template(
+        'admin/centers.html',
+        centers=all_centers,
+        counts=counts,
+    )
 
 
 # @admin_bp.route('/centers/new', methods=['GET', 'POST'])
