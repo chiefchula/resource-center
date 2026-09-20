@@ -2,6 +2,8 @@ from flask import Flask
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from sqlalchemy import inspect
+
 from config import Config
 
 migrate = Migrate()
@@ -16,12 +18,12 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
+    # --- Extensions ---
     db.init_app(app)
     login_manager.init_app(app)
-
     migrate.init_app(app, db)
 
-    # Register blueprints
+    # --- Blueprints ---
     from app.blueprints.auth import auth_bp
     from app.blueprints.main import main_bp
     from app.blueprints.items import items_bp
@@ -34,13 +36,15 @@ def create_app(config_class=Config):
     app.register_blueprint(transfers_bp, url_prefix='/transfers')
     app.register_blueprint(admin_bp, url_prefix='/admin')
 
-    # Register custom Jinja filters
+    # --- Template filters ---
     register_template_filters(app)
 
-    # Create DB and seed if needed
+    # --- Seed defaults if the DB is already migrated ---
+    # The schema itself is managed by Alembic:
+    #     flask db upgrade
     with app.app_context():
-        db.create_all()
-        seed_initial_data()
+        if 'users' in inspect(db.engine).get_table_names():
+            seed_initial_data()
 
     return app
 
@@ -70,7 +74,10 @@ def register_template_filters(app):
 
 
 def seed_initial_data():
-    """Seed default admin, categories, and a main resource center."""
+    """Seed default admin, categories, and a main resource center.
+
+    Idempotent: returns early if the admin user already exists.
+    """
     from app.models import User, Category, ResourceCenter
 
     if User.query.filter_by(username='admin').first():
