@@ -1,3 +1,4 @@
+import os
 from flask import Flask
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
@@ -38,6 +39,8 @@ def create_app(config_class=Config):
 
     # --- Template filters ---
     register_template_filters(app)
+
+    os.makedirs(app.instance_path, exist_ok=True)
 
     # --- Seed defaults if the DB is already migrated ---
     # The schema itself is managed by Alembic:
