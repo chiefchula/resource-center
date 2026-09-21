@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}New Category{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">New Category</h2>
+
+<form method="POST" novalidate>
+    {{ form.hidden_tag() }}
+
+    <div class="mb-3">
+        {{ form.name.label(class="form-label") }}
+        {{ form.name(class="form-control") }}
+    </div>
+
+    <div class="mb-3">
+        {{ form.description.label(class="form-label") }}
+        {{ form.description(class="form-control", rows=3) }}
+    </div>
+
+    {{ form.submit(class="btn btn-primary") }}
+    <a class="btn btn-outline-secondary" href="{{ url_for('admin.categories') }}">Cancel</a>
+</form>
+{% endblock %}
