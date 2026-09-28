@@ -125,3 +125,25 @@ class OrganizationForm(FlaskForm):
     contact_phone = StringField('Contact Phone')
     address = TextAreaField('Address')
     submit = SubmitField('Save')
+
+class ItemCheckForm(FlaskForm):
+    condition = SelectField(
+        'Condition',
+        choices=[('New', 'New'), ('Good', 'Good'), ('Fair', 'Fair'), ('Poor', 'Poor')],
+        validators=[DataRequired()],
+    )
+    status_found = SelectField(
+        'Status found',
+        choices=[
+            ('active', 'Present and in use'),
+            ('missing', 'Missing / cannot locate'),
+            ('damaged', 'Damaged — needs attention'),
+        ],
+        validators=[DataRequired()],
+    )
+    location_note = StringField(
+        'Location note',
+        validators=[Optional(), Length(max=200)],
+    )
+    notes = TextAreaField('Notes', validators=[Optional()])
+    submit = SubmitField('Record check')

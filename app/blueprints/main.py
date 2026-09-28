@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, jsonify
 from flask_login import login_required, current_user
 
+from datetime import datetime, timedelta
 from app.models import Item, Transfer, ItemStatus, TransferStatus
 
 main_bp = Blueprint('main', __name__)
@@ -20,6 +21,8 @@ def dashboard():
     return render_template('main/dashboard.html', **_dashboard_context())
 
 
+
+
 def _dashboard_context():
     if current_user.is_admin:
         items = Item.query.all()
@@ -32,18 +35,28 @@ def _dashboard_context():
             (Transfer.status.in_([TransferStatus.PENDING.value, TransferStatus.APPROVED.value]))
         ).all()
 
+    # NEW: overdue checks
+    cutoff = datetime.utcnow() - timedelta(days=90)
+    overdue_checks = [
+        i for i in items
+        if i.status == ItemStatus.ACTIVE.value
+        and (i.last_checked_at is None or i.last_checked_at < cutoff)
+    ]
+
     stats = {
         'total_items': len(items),
         'active_items': len([i for i in items if i.status == ItemStatus.ACTIVE.value]),
         'decommissioned_items': len([i for i in items if i.status == ItemStatus.DECOMMISSIONED.value]),
         'pending_transfers': len(pending),
+        'overdue_checks': len(overdue_checks),      # NEW
     }
+
     return {
         'stats': stats,
         'items': items[:8],
         'pending_transfers': pending[:5],
+        'overdue_checks': overdue_checks[:10],      # NEW — top 10
     }
-
 
 @main_bp.route('/api/stats')
 @login_required

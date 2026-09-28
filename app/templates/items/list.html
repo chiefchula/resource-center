@@ -34,7 +34,7 @@
 <form class="row g-2 mb-3" method="get">
     <div class="col-md-4">
         <input type="text" class="form-control" name="q"
-               value="{{ search }}" placeholder="Search by name…">
+               value="{{ search or '' }}" placeholder="Search by name…">
     </div>
     <div class="col-md-3">
         <select class="form-select" name="category">
@@ -49,9 +49,9 @@
     <div class="col-md-3">
         <select class="form-select" name="status">
             <option value="">All statuses</option>
-            <option value="active"          {% if current_status == 'active' %}selected{% endif %}>Active</option>
-            <option value="decommissioned"  {% if current_status == 'decommissioned' %}selected{% endif %}>Decommissioned</option>
-            <option value="pending_transfer"{% if current_status == 'pending_transfer' %}selected{% endif %}>Pending Transfer</option>
+            <option value="active"           {% if current_status == 'active' %}selected{% endif %}>Active</option>
+            <option value="decommissioned"   {% if current_status == 'decommissioned' %}selected{% endif %}>Decommissioned</option>
+            <option value="pending_transfer" {% if current_status == 'pending_transfer' %}selected{% endif %}>Pending Transfer</option>
         </select>
     </div>
     <div class="col-md-2 d-flex gap-1">
@@ -59,14 +59,15 @@
             <i class="bi bi-search"></i> Filter
         </button>
         {% if search or current_category or current_status or current_center %}
-        <a class="btn btn-outline-secondary" href="{{ url_for('items.list_items') }}"
+        <a class="btn btn-outline-secondary"
+           href="{{ url_for('items.list_items') }}"
            title="Reset all filters">
             <i class="bi bi-x-lg"></i>
         </a>
         {% endif %}
     </div>
 
-    {# Preserve the center filter when re-submitting #}
+    {# Preserve center filter when re-submitting #}
     {% if current_center %}
     <input type="hidden" name="center" value="{{ current_center.id }}">
     {% endif %}
@@ -85,6 +86,7 @@
                         <th class="text-center">Qty</th>
                         <th>Center</th>
                         <th>Status</th>
+                        <th>Check</th>
                         <th class="text-end">Actions</th>
                     </tr>
                 </thead>
@@ -117,6 +119,25 @@
                                 {{ item.status.replace('_', ' ') }}
                             </span>
                         </td>
+                        <td>
+                            {% if item.is_active %}
+                                {% if item.is_check_overdue %}
+                                    <span class="badge bg-warning text-dark"
+                                          title="{% if item.last_checked_at %}Last checked {{ item.days_since_check }} days ago{% else %}Never checked{% endif %}">
+                                        <i class="bi bi-exclamation-triangle"></i> Due
+                                    </span>
+                                {% elif item.last_checked_at %}
+                                    <span class="badge bg-light text-success border"
+                                          title="Last checked {{ item.last_checked_at|date }} ({{ item.days_since_check }} days ago)">
+                                        <i class="bi bi-check2"></i> OK
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted small">—</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted small">—</span>
+                            {% endif %}
+                        </td>
                         <td class="text-end">
                             <div class="btn-group btn-group-sm" role="group">
                                 <a class="btn btn-outline-secondary"
@@ -125,6 +146,11 @@
                                     <i class="bi bi-eye"></i>
                                 </a>
                                 {% if item.is_active %}
+                                <a class="btn btn-outline-warning"
+                                   href="{{ url_for('items.check_item', item_id=item.id) }}"
+                                   title="Record routine check">
+                                    <i class="bi bi-clipboard-check"></i>
+                                </a>
                                 <a class="btn btn-outline-primary"
                                    href="{{ url_for('transfers.new_transfer', item_id=item.id) }}"
                                    title="Transfer">

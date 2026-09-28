@@ -4,9 +4,10 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 
 from app import db
-from app.models import Item, Category, Organization, ItemStatus, AcquisitionType, ResourceCenter
-from app.forms import ItemForm, DecommissionForm
+from app.models import Item, Category, Organization, ItemStatus, AcquisitionType, ResourceCenter, ItemCheck
+from app.forms import ItemForm, DecommissionForm, ItemCheckForm
 from app.decorators import center_access_required
+
 
 items_bp = Blueprint('items', __name__)
 
@@ -206,3 +207,48 @@ def decommission_item(item_id):
         flash('Reason is required.', 'danger')
 
     return redirect(url_for('items.view_item', item_id=item.id))
+
+@items_bp.route('/<int:item_id>/check', methods=['GET', 'POST'])
+@login_required
+def check_item(item_id):
+    item = Item.query.get_or_404(item_id)
+
+    if not _can_access(item):
+        abort(403)
+
+    if item.is_decommissioned:
+        flash('Decommissioned items do not need routine checks.', 'info')
+        return redirect(url_for('items.view_item', item_id=item.id))
+
+    form = ItemCheckForm(obj=item)
+
+    if form.validate_on_submit():
+        check = ItemCheck(
+            item_id=item.id,
+            checked_by_id=current_user.id,
+            condition=form.condition.data,
+            status_found=form.status_found.data,
+            location_note=form.location_note.data,
+            notes=form.notes.data,
+        )
+        db.session.add(check)
+
+        # Update item fields from the check
+        item.last_checked_at = datetime.utcnow()
+        item.last_checked_by_id = current_user.id
+        item.condition = form.condition.data
+
+        # If the item was reported missing or damaged, reflect it in status
+        if form.status_found.data == 'missing':
+            item.status = ItemStatus.DECOMMISSIONED.value
+            item.decommission_reason = (
+                f"Reported missing on {datetime.utcnow():%Y-%m-%d} during routine check."
+            )
+            item.decommission_date = datetime.utcnow()
+            item.decommissioned_by_id = current_user.id
+
+        db.session.commit()
+        flash('Item check recorded. Thank you!', 'success')
+        return redirect(url_for('items.view_item', item_id=item.id))
+
+    return render_template('items/check.html', form=form, item=item)

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Check {{ item.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Routine check — {{ item.name }}</h2>
+    <a class="btn btn-outline-secondary" href="{{ url_for('items.view_item', item_id=item.id) }}">
+        Back to item
+    </a>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-7">
+        <form method="POST" novalidate>
+            {{ form.hidden_tag() }}
+
+            <div class="mb-3">
+                {{ form.status_found.label(class="form-label") }}
+                {{ form.status_found(class="form-select") }}
+                <div class="form-text">
+                    Choose what you found during this check.
+                </div>
+            </div>
+
+            <div class="mb-3">
+                {{ form.condition.label(class="form-label") }}
+                {{ form.condition(class="form-select") }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.location_note.label(class="form-label") }}
+                {{ form.location_note(class="form-control", placeholder="e.g. Store room B, shelf 3") }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.notes.label(class="form-label") }}
+                {{ form.notes(class="form-control", rows=3, placeholder="Any observations…") }}
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check2-circle"></i> Record check
+            </button>
+        </form>
+    </div>
+
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0">Item summary</h5></div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">Category</dt>
+                    <dd class="col-sm-7">{{ item.category.name }}</dd>
+
+                    <dt class="col-sm-5">Center</dt>
+                    <dd class="col-sm-7">{{ item.current_center.name }}</dd>
+
+                    <dt class="col-sm-5">Quantity</dt>
+                    <dd class="col-sm-7">{{ item.quantity }}</dd>
+
+                    <dt class="col-sm-5">Last checked</dt>
+                    <dd class="col-sm-7">
+                        {% if item.last_checked_at %}
+                            {{ item.last_checked_at|date }} ({{ item.days_since_check }} days ago)
+                        {% else %}
+                            <span class="text-danger">Never</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-5">Current condition</dt>
+                    <dd class="col-sm-7">{{ item.condition or '—' }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
