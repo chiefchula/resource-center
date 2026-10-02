@@ -147,3 +147,15 @@ class ItemCheckForm(FlaskForm):
     )
     notes = TextAreaField('Notes', validators=[Optional()])
     submit = SubmitField('Record check')
+
+class EditUserForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired(), Length(max=80)])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    is_admin = BooleanField('Administrator')
+    resource_center_id = SelectField('Resource Center', coerce=int, validators=[Optional()])
+    submit = SubmitField('Save changes')
+
+
+class ResetUserPasswordForm(FlaskForm):
+    password = PasswordField('New password', validators=[DataRequired(), Length(min=6)])
+    submit = SubmitField('Reset password')

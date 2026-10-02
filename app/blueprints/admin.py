@@ -1,10 +1,11 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, jsonify, request
-from flask_login import login_required
+from flask_login import login_required, current_user
 
 from app import db
 from app.models import User, ResourceCenter, Category, Organization, Item, ItemStatus
-from app.forms import UserForm, ResourceCenterForm, CategoryForm, OrganizationForm
+from app.forms import UserForm, ResourceCenterForm, CategoryForm, OrganizationForm, EditUserForm, ResetUserPasswordForm
 from app.decorators import admin_required
+
 
 from sqlalchemy import func
 
@@ -61,6 +62,78 @@ def new_user():
             return redirect(url_for('admin.users'))
 
     return render_template('admin/new_user.html', form=form)
+
+# ---------------- Users: edit / reset password / toggle ----------------
+
+@admin_bp.route('/users/<int:user_id>/edit', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def edit_user(user_id):
+    user = User.query.get_or_404(user_id)
+    form = EditUserForm(obj=user)
+    form.resource_center_id.choices = [(0, '-- None --')] + [
+        (c.id, c.name) for c in ResourceCenter.query.order_by(ResourceCenter.name)
+    ]
+
+    # Normalize the "no center" choice: 0 -> None
+    if form.validate_on_submit():
+        # Prevent admins from demoting themselves (avoid lockout)
+        if user.id == current_user.id and not form.is_admin.data:
+            flash('You cannot remove your own administrator privileges.', 'warning')
+            return redirect(url_for('admin.edit_user', user_id=user.id))
+
+        # Prevent duplicate usernames / emails
+        if User.query.filter(User.username == form.username.data, User.id != user.id).first():
+            flash('Another user already has that username.', 'danger')
+            return render_template('admin/edit_user.html', form=form, user=user)
+
+        if User.query.filter(User.email == form.email.data, User.id != user.id).first():
+            flash('Another user already has that email.', 'danger')
+            return render_template('admin/edit_user.html', form=form, user=user)
+
+        user.username = form.username.data
+        user.email = form.email.data
+        user.is_admin = form.is_admin.data
+        user.resource_center_id = form.resource_center_id.data or None
+        db.session.commit()
+        flash('User updated.', 'success')
+        return redirect(url_for('admin.users'))
+
+    return render_template('admin/edit_user.html', form=form, user=user)
+
+
+@admin_bp.route('/users/<int:user_id>/reset-password', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def reset_user_password(user_id):
+    user = User.query.get_or_404(user_id)
+    form = ResetUserPasswordForm()
+
+    if form.validate_on_submit():
+        user.set_password(form.password.data)
+        db.session.commit()
+        flash(f'Password reset for {user.username}.', 'success')
+        return redirect(url_for('admin.users'))
+
+    return render_template('admin/reset_user_password.html', form=form, user=user)
+
+
+@admin_bp.route('/users/<int:user_id>/toggle', methods=['POST'])
+@login_required
+@admin_required
+def toggle_user(user_id):
+    user = User.query.get_or_404(user_id)
+
+    # Prevent self-deactivation (would lock yourself out)
+    if user.id == current_user.id:
+        flash('You cannot deactivate your own account.', 'warning')
+        return redirect(url_for('admin.users'))
+
+    user.is_active = not user.is_active
+    db.session.commit()
+    state = 'activated' if user.is_active else 'deactivated'
+    flash(f'User {user.username} {state}.', 'success')
+    return redirect(url_for('admin.users'))
 
 
 # ---------------- Categories ----------------

@@ -41,6 +41,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(255))
     is_admin = db.Column(db.Boolean, default=False)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)   # NEW
     resource_center_id = db.Column(db.Integer, db.ForeignKey('resource_centers.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -54,6 +55,7 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
         return f'<User {self.username}>'
+
 
 
 @login_manager.user_loader
@@ -284,3 +286,5 @@ class ItemCheck(db.Model):
 
     def __repr__(self):
         return f'<ItemCheck item={self.item_id} at={self.checked_at:%Y-%m-%d}>'
+
+

@@ -1,9 +1,9 @@
 import os
+
 from flask import Flask
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
-from sqlalchemy import inspect
 
 from config import Config
 
@@ -40,14 +40,22 @@ def create_app(config_class=Config):
     # --- Template filters ---
     register_template_filters(app)
 
+    # --- Ensure instance/ exists (SQLite lives here) ---
     os.makedirs(app.instance_path, exist_ok=True)
 
-    # --- Seed defaults if the DB is already migrated ---
-    # The schema itself is managed by Alembic:
+    # --- CLI commands ---
+    register_cli(app)
+
+    # ------------------------------------------------------------------
+    # NOTE: Seeding is NOT done automatically on app startup.
+    #
+    # After running migrations, seed the database with:
+    #
     #     flask db upgrade
-    with app.app_context():
-        if 'users' in inspect(db.engine).get_table_names():
-            seed_initial_data()
+    #     flask seed
+    #
+    # This avoids conflicts between auto-seeding and schema changes.
+    # ------------------------------------------------------------------
 
     return app
 
@@ -76,17 +84,40 @@ def register_template_filters(app):
         return mapping.get(status, 'secondary')
 
 
+def register_cli(app):
+    """Register custom Flask CLI commands."""
+    import click
+
+    @app.cli.command('seed')
+    def seed_command():
+        """Seed default admin, categories, and a main resource center.
+
+        Idempotent — safe to run multiple times. Existing data is preserved.
+        """
+        with app.app_context():
+            created = seed_initial_data()
+            if created:
+                click.echo('✔ Seeded default admin (admin / admin123) and base data.')
+            else:
+                click.echo('ℹ Seed skipped — data already present.')
+
+
 def seed_initial_data():
     """Seed default admin, categories, and a main resource center.
 
-    Idempotent: returns early if the admin user already exists.
+    Idempotent: returns False if the admin user already exists.
+    Returns True if seeding happened.
     """
     from app.models import User, Category, ResourceCenter
 
     if User.query.filter_by(username='admin').first():
-        return
+        return False
 
-    admin = User(username='admin', email='admin@rescuecenter.local', is_admin=True)
+    admin = User(
+        username='admin',
+        email='admin@rescuecenter.local',
+        is_admin=True,
+    )
     admin.set_password('admin123')
 
     categories = [
@@ -112,4 +143,4 @@ def seed_initial_data():
     db.session.add_all(categories)
     db.session.add(main_center)
     db.session.commit()
-    print('✔ Seeded default admin (admin / admin123) and base data.')
+    return True
